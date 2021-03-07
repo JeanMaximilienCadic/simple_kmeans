@@ -1,7 +1,12 @@
+"""
+DISCLAIMER
+This code has been modified from this link accessible online
+https://stackoverflow.com/questions/9401658/how-to-animate-a-scatter-plot
+"""
+
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
-from sklearn.datasets import make_gaussian_quantiles
 import random
 from simple_kmeans.data import generate_data
 
