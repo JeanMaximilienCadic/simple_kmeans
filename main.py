@@ -1,19 +1,24 @@
+from simple_kmeans.visualization import display, serialize_results
+from simple_kmeans.metrics import accuracy
+from simple_kmeans.data import generate_data
 from simple_kmeans.models import KMeans
-import warnings
-from sklearn.datasets import make_gaussian_quantiles
-import numpy as np
+from matplotlib import cm
+import matplotlib
+matplotlib.use('TkAgg')
+
+def main(visualization=True):
+    n_samples, n_clusters, max_iter, init = 3000, 5, 300, "sharding"
+    colors = cm.get_cmap('viridis', n_clusters).colors
+    xy, labels = generate_data(n_samples=3000, n_clusters=n_clusters)
+    map_gt = serialize_results(KMeans.calculatecluster_centers_(xy, labels, n_clusters), labels)
+    model = KMeans(n_clusters=n_clusters, random_state=0, n_init=10, max_iter=max_iter, init=init)
+    model.fit(xy)
+    print(model.labels_)
+    print(model.cluster_centers_)
+    if visualization:
+        _map = serialize_results(model.cluster_centers_, model.labels_)
+        display(xy, _map, colors, title=f"KMeans_{KMeans.__module__}", score=accuracy(map_gt, _map, n_clusters))
+
 
 if __name__ == "__main__":
-    with warnings.catch_warnings(record=True) as w:
-        # Construct dataset
-        X1, y1 = make_gaussian_quantiles(cov=2.,
-                                         n_samples=200, n_features=2,
-                                         n_classes=2, random_state=1)
-        X2, y2 = make_gaussian_quantiles(mean=(3, 5), cov=1.5,
-                                         n_samples=300, n_features=2,
-                                         n_classes=2, random_state=1)
-
-        X = np.concatenate((X1, X2))
-        kmeans = KMeans(n_clusters=2, n_init=1)
-        history = kmeans.fit(np.concatenate((X1, X2), axis=0))
-        history.show()
+    main(visualization=True)

@@ -1,61 +1,58 @@
-import random
-import numpy as np
-from sklearn.metrics import pairwise_distances
 from scipy.linalg import norm
-import pickle
-from simple_kmeans.visualization import display
+import numpy as np
+from .functional import rcentroid, naive_sharding
 
 
 class KMeansHistory(dict):
-    def __init__(self, data, niters):
+    def __init__(self, method, data, n_clusters, max_iter, init):
+        """
+        Store the results of the KMeans implementat at each iteration.
+
+        :param method:
+        :param data:
+        :param n_clusters:
+        :param max_iter:
+        :param init:
+        """
         super(KMeansHistory, self).__init__()
+        self._method = method
         self._data = data
-        self._niters = niters
-        self._n_clusters = 2
+        self._max_iter = max_iter
+        self._n_clusters = n_clusters
+        self._init = init
         self.completed = False
-        self._centroids, self._preds = self.init()
+        self.cluster_centers_ =None
+        self.labels_= None
+        self.init()
 
     def init(self):
         self.clear()
         self._iter = 0
-        _centroids, _preds = self.init_centroids(), None
-        return _centroids, _preds
+        self.labels_ = None
+        self.initcluster_centers_()
 
-    def init_centroids(self):
-        def new_centroid():
-            return np.array([random.random(), random.random()])
-        return np.array([new_centroid() for _ in range(self._n_clusters)])
-
-    def calculate_centroids(self, preds):
-        _centroids = np.array([np.mean(self._data[preds == k], axis=0) for k in range(2)])
-        try:
-            assert not np.max(np.isnan(_centroids))
-        except AssertionError:
-            raise ValueError
-        return _centroids
+    def initcluster_centers_(self):
+        if self._init == "sharding":
+            self.cluster_centers_ = naive_sharding(self._data, self._n_clusters)
+        else:
+            self.cluster_centers_ = np.array([rcentroid() for _ in range(self._n_clusters)])
 
     def step(self, tolerance=10e-4):
         try:
-            assert self._iter<self._niters
-            D = pairwise_distances(self._data, self._centroids)
-            _preds = np.argmin(D, axis=1)
-            _centroids = self.calculate_centroids(_preds)
-            assert norm(self._centroids - _centroids) > tolerance
-            self._centroids, self._preds = _centroids, _preds
-            self.setdefault(self._iter, (self._centroids, self._preds))
+            assert self._iter<self._max_iter
+            cluster_centers_, labels_ = self._method(self._data, self.cluster_centers_)
+            assert norm(self.cluster_centers_ - cluster_centers_) > tolerance
+            self.cluster_centers_, self.labels_ = cluster_centers_, labels_
+            self.setdefault(self._iter, (self.cluster_centers_, self.labels_))
             self._iter += 1
+            return True
         except AssertionError:
             self.completed = True
             self._iter-=1
+            return True
         except ValueError:
+            self._init = "random"
             self.init()
+            return False
 
-    def show(self, step=-1):
-        step = self._iter if step==-1 else step
-        assert step >=0 and step<=self._iter
-        centroids, preds = self.__getitem__(step)
-        pickle.dump(self._data, open("../../etc/data.pkl", "wb"))
-        pickle.dump(centroids, open("../../etc/centroids.pkl", "wb"))
-        pickle.dump(preds, open("../../etc/preds.pkl", "wb"))
-        display(self._data, centroids, preds)
 
