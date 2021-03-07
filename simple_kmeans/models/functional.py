@@ -1,3 +1,8 @@
+"""
+DISCLAIMER
+This code has been modified from this link accessible online
+https://www.kdnuggets.com/2017/03/naive-sharding-centroid-initialization-method.html
+"""
 import random
 from math import floor
 import numpy as np
