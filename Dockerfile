@@ -1,4 +1,4 @@
-FROM python:3.6
+FROM python:3.12.0a4
 
 RUN apt-get update -y && apt install  python3-tk -y
 RUN groupadd -g 1000 ubuntu
